@@ -1,53 +1,95 @@
-document.addEventListener("DOMContentLoaded", function () {
-  const outputElement = document.getElementById("output");
+document.addEventListener("DOMContentLoaded", () => {
+  const output = document.getElementById("output");
   let currentInput = "";
+  let lastOperator = "";
+  let firstOperand = "";
 
-  function updateDisplay(value) {
-    outputElement.innerText = value;
-  }
+  const updateOutput = (value) => {
+    output.textContent = value || "0";
+  };
 
-  document.getElementById("clear").addEventListener("click", () => {
+  const clearAll = () => {
     currentInput = "";
-    updateDisplay("0");
-  });
+    firstOperand = "";
+    lastOperator = "";
+    updateOutput("");
+  };
 
-  document.getElementById("back").addEventListener("click", () => {
+  const backspace = () => {
     currentInput = currentInput.slice(0, -1);
-    updateDisplay(currentInput || "0");
-  });
+    updateOutput(currentInput);
+  };
+
+  const handleInput = (value) => {
+    if (value === "." && currentInput.includes(".")) return;
+    currentInput += value;
+    updateOutput(currentInput);
+  };
+
+  const handleOperator = (operator) => {
+    if (currentInput === "" && firstOperand === "") return;
+    if (firstOperand === "") {
+      firstOperand = currentInput || "0";
+    } else if (currentInput !== "") {
+      firstOperand = calculate(firstOperand, currentInput, lastOperator);
+    }
+    lastOperator = operator;
+    currentInput = "";
+    updateOutput(firstOperand);
+  };
+
+  const calculate = (a, b, operator) => {
+    const num1 = parseFloat(a);
+    const num2 = parseFloat(b);
+
+    switch (operator) {
+      case "add":
+        return (num1 + num2).toString();
+      case "sub":
+        return (num1 - num2).toString();
+      case "mult":
+        return (num1 * num2).toString();
+      case "div":
+        return num2 !== 0 ? (num1 / num2).toString() : "Error";
+      case "mod":
+        return (num1 % num2).toString();
+      default:
+        return b;
+    }
+  };
+
+  const handleEqual = () => {
+    if (currentInput !== "" && firstOperand !== "") {
+      currentInput = calculate(firstOperand, currentInput, lastOperator);
+      firstOperand = "";
+      lastOperator = "";
+      updateOutput(currentInput);
+    }
+  };
 
   document.querySelectorAll(".input").forEach((button) => {
-    button.addEventListener("click", () => {
-      const buttonId = button.id;
-      if (buttonId === "sum") {
-        calculateResult();
-      } else if (buttonId === "mod") {
-        currentInput += "%";
-      } else if (buttonId === "div") {
-        currentInput += "/";
-      } else if (buttonId === "mult") {
-        currentInput += "*";
-      } else if (buttonId === "sub") {
-        currentInput += "-";
-      } else if (buttonId === "add") {
-        currentInput += "+";
-      } else if (buttonId === ".") {
-        currentInput += ".";
-      } else if (/[0-9]/.test(buttonId)) {
-        currentInput += buttonId;
+    button.addEventListener("click", (e) => {
+      const value = e.target.dataset.value;
+      const action = e.target.dataset.action;
+
+      if (value !== undefined) {
+        handleInput(value);
+      } else if (action) {
+        switch (action) {
+          case "clear":
+            clearAll();
+            break;
+          case "back":
+            backspace();
+            break;
+          case "sum":
+            handleEqual();
+            break;
+          default:
+            handleOperator(action);
+            break;
+        }
       }
-      updateDisplay(currentInput);
     });
   });
-
-  function calculateResult() {
-    try {
-      const result = eval(currentInput.replace("%", "/100"));
-      currentInput = result.toString();
-      updateDisplay(result);
-    } catch (error) {
-      updateDisplay("Error");
-      currentInput = "";
-    }
-  }
 });
